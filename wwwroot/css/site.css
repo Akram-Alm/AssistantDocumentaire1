@@ -1,31 +1,206 @@
-html {
-  font-size: 14px;
+:root {
+    --bg: #0e1015;
+    --bg-card: #171a21;
+    --bg-elevated: #1e222b;
+    --border: #2a2e38;
+    --text: #f2f3f5;
+    --text-muted: #9aa0ab;
+    --accent: #3b6fe0;
+    --accent-hover: #2f5cc4;
+    --danger: #e0544a;
 }
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+* {
+    box-sizing: border-box;
 }
 
 body {
-  margin-bottom: 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    margin: 0;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+.app-navbar {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+.app-navbar-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.app-nav-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+    .app-nav-link.active {
+        background: var(--bg-elevated);
+        color: var(--text);
+    }
+
+.app-main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 24px 120px;
+}
+
+.page-title {
+    text-align: center;
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.page-subtitle {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    margin-bottom: 32px;
+}
+
+.dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    background: var(--bg-card);
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+    .dropzone.dragover {
+        border-color: var(--accent);
+        background: var(--bg-elevated);
+    }
+
+.dropzone-text {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-muted);
+}
+
+    .dropzone-text strong {
+        display: block;
+        color: var(--text);
+        font-size: 1.1rem;
+    }
+
+.btn-browse {
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.documents-card {
+    margin-top: 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+    .documents-card h2 {
+        padding: 20px 24px;
+        margin: 0;
+        font-size: 1.3rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+table.documents-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.documents-table th {
+    text-align: left;
+    padding: 12px 24px;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.documents-table td {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+}
+
+.documents-table tr:last-child td {
+    border-bottom: none;
+}
+
+.doc-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.doc-actions {
+    display: flex;
+    gap: 14px;
+}
+
+    .doc-actions button {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px;
+    }
+
+        .doc-actions button:hover {
+            color: var(--text);
+        }
+
+    .doc-actions .delete:hover {
+        color: var(--danger);
+    }
+
+.floating-chat-btn {
+    position: fixed;
+    bottom: 28px;
+    left: 28px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 14px 22px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(59, 111, 224, 0.35);
+}
+
+    .floating-chat-btn:hover {
+        background: var(--accent-hover);
+        color: white;
+    }

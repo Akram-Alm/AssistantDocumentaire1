@@ -16,8 +16,6 @@ namespace AssistantDocumentaire1.Controllers
             _environment = environment;
         }
 
-        // GET: /Documents
-        // Affiche le formulaire d'upload + la liste des documents déjà envoyés
         public async Task<IActionResult> Index()
         {
             var documents = await _context.Documents
@@ -26,18 +24,15 @@ namespace AssistantDocumentaire1.Controllers
             return View(documents);
         }
 
-        // POST: /Documents/Upload
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Upload(List<IFormFile> fichiers)
         {
             if (fichiers == null || fichiers.Count == 0)
             {
-                TempData["Erreur"] = "Aucun fichier sélectionné.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Dossier physique où les PDF seront stockés (hors wwwroot pour ne pas les rendre accessibles publiquement)
             string dossierStockage = Path.Combine(_environment.ContentRootPath, "UploadedFiles");
             if (!Directory.Exists(dossierStockage))
             {
@@ -46,15 +41,11 @@ namespace AssistantDocumentaire1.Controllers
 
             foreach (var fichier in fichiers)
             {
-                if (fichier.Length == 0) continue;
-
-                // Vérifie que c'est bien un PDF
-                if (Path.GetExtension(fichier.FileName).ToLower() != ".pdf")
+                if (fichier.Length == 0 || Path.GetExtension(fichier.FileName).ToLower() != ".pdf")
                 {
                     continue;
                 }
 
-                // Nom de fichier unique pour éviter d'écraser un fichier existant
                 string nomUnique = $"{Guid.NewGuid()}_{fichier.FileName}";
                 string cheminComplet = Path.Combine(dossierStockage, nomUnique);
 
@@ -63,21 +54,53 @@ namespace AssistantDocumentaire1.Controllers
                     await fichier.CopyToAsync(stream);
                 }
 
-                var document = new Document
+                _context.Documents.Add(new Document
                 {
                     Titre = fichier.FileName,
                     DateAjout = DateTime.Now,
                     Chemin = cheminComplet,
+                    TailleOctets = fichier.Length,
                     EstIndexe = false
-                };
-
-                _context.Documents.Add(document);
+                });
             }
 
             await _context.SaveChangesAsync();
-
-            TempData["Succes"] = "Document(s) ajouté(s) avec succès.";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Supprimer(int id)
+        {
+            var document = await _context.Documents.FindAsync(id);
+            if (document != null)
+            {
+                if (System.IO.File.Exists(document.Chemin))
+                {
+                    System.IO.File.Delete(document.Chemin);
+                }
+                _context.Documents.Remove(document);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        public class RenommerRequest
+        {
+            public int Id { get; set; }
+            public string NouveauTitre { get; set; } = string.Empty;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Renommer([FromBody] RenommerRequest req)
+        {
+            var document = await _context.Documents.FindAsync(req.Id);
+            if (document != null)
+            {
+                document.Titre = req.NouveauTitre;
+                await _context.SaveChangesAsync();
+            }
+            return Ok();
         }
     }
 }
