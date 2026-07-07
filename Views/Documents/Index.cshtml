@@ -1,0 +1,48 @@
+﻿@model List<AssistantDocumentaire1.Models.Document>
+
+@{
+    ViewData["Title"] = "Gestion des documents";
+}
+
+<h1>Ajouter des documents PDF</h1>
+
+@if (TempData["Succes"] != null)
+{
+    <div class="alert alert-success">@TempData["Succes"]</div>
+}
+@if (TempData["Erreur"] != null)
+{
+    <div class="alert alert-danger">@TempData["Erreur"]</div>
+}
+
+<form asp-action="Upload" method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label class="form-label">Sélectionner un ou plusieurs fichiers PDF</label>
+        <input type="file" name="fichiers" class="form-control" multiple accept=".pdf" />
+    </div>
+    <button type="submit" class="btn btn-primary">Envoyer</button>
+</form>
+
+<hr />
+
+<h2>Documents déjà envoyés</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Titre</th>
+            <th>Date d'ajout</th>
+            <th>Indexé (RAG)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var doc in Model)
+        {
+            <tr>
+                <td>@doc.Titre</td>
+                <td>@doc.DateAjout.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@(doc.EstIndexe ? "✅ Oui" : "⏳ En attente")</td>
+            </tr>
+        }
+    </tbody>
+</table>
