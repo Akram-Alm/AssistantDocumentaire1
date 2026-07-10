@@ -1,7 +1,9 @@
-﻿using AssistantDocumentaire1.Data;
-using AssistantDocumentaire1.Models;
+﻿using AssistantDocumentaire1.Models;
+using AssistantDocumentaire1.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
+using System.Text.Json;
 
 namespace AssistantDocumentaire1.Controllers
 {
@@ -9,11 +11,14 @@ namespace AssistantDocumentaire1.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private const string RagServiceUrl = "http://127.0.0.1:8001";
 
-        public DocumentsController(ApplicationDbContext context, IWebHostEnvironment environment)
+        public DocumentsController(ApplicationDbContext context, IWebHostEnvironment environment, IHttpClientFactory httpClientFactory)
         {
             _context = context;
             _environment = environment;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<IActionResult> Index()
@@ -39,6 +44,8 @@ namespace AssistantDocumentaire1.Controllers
                 Directory.CreateDirectory(dossierStockage);
             }
 
+            var nouveauxDocuments = new List<Document>();
+
             foreach (var fichier in fichiers)
             {
                 if (fichier.Length == 0 || Path.GetExtension(fichier.FileName).ToLower() != ".pdf")
@@ -54,18 +61,50 @@ namespace AssistantDocumentaire1.Controllers
                     await fichier.CopyToAsync(stream);
                 }
 
-                _context.Documents.Add(new Document
+                var document = new Document
                 {
                     Titre = fichier.FileName,
                     DateAjout = DateTime.Now,
                     Chemin = cheminComplet,
                     TailleOctets = fichier.Length,
                     EstIndexe = false
-                });
+                };
+
+                _context.Documents.Add(document);
+                nouveauxDocuments.Add(document);
             }
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(); // sauvegarde d'abord pour obtenir les Id
+
+            // Indexation automatique dans le service Python RAG
+            foreach (var document in nouveauxDocuments)
+            {
+                bool succes = await IndexerDansRagAsync(document);
+                document.EstIndexe = succes;
+            }
+
+            await _context.SaveChangesAsync(); // met à jour EstIndexe
+
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<bool> IndexerDansRagAsync(Document document)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                var contenu = new StringContent(
+                    JsonSerializer.Serialize(new { chemin = document.Chemin, titre = document.Titre, document_id = document.Id }),
+                    Encoding.UTF8,
+                    "application/json");
+
+                var reponse = await client.PostAsync($"{RagServiceUrl}/index", contenu);
+                return reponse.IsSuccessStatusCode;
+            }
+            catch (HttpRequestException)
+            {
+                return false;
+            }
         }
 
         [HttpPost]
@@ -75,13 +114,76 @@ namespace AssistantDocumentaire1.Controllers
             var document = await _context.Documents.FindAsync(id);
             if (document != null)
             {
+                // 1. Prévenir le service Python pour retirer les chunks de FAISS
+                try
+                {
+                    var client = _httpClientFactory.CreateClient();
+                    var contenu = new StringContent(
+                        JsonSerializer.Serialize(new { document_id = document.Id }),
+                        Encoding.UTF8,
+                        "application/json");
+                    await client.PostAsync($"{RagServiceUrl}/supprimer", contenu);
+                }
+                catch (HttpRequestException)
+                {
+                    // Le service Python n'est peut-être pas lancé, on continue quand même la suppression locale
+                }
+
+                // 2. Supprimer le fichier physique
                 if (System.IO.File.Exists(document.Chemin))
                 {
                     System.IO.File.Delete(document.Chemin);
                 }
+
+                // 3. Supprimer la ligne SQL
                 _context.Documents.Remove(document);
                 await _context.SaveChangesAsync();
             }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReindexerTout()
+        {
+            var documents = await _context.Documents.ToListAsync();
+
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromMinutes(5); // peut être long si beaucoup de documents
+
+            var payload = new
+            {
+                documents = documents.Select(d => new { document_id = d.Id, chemin = d.Chemin, titre = d.Titre })
+            };
+
+            try
+            {
+                var contenu = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                var reponseHttp = await client.PostAsync($"{RagServiceUrl}/reindexer_tout", contenu);
+
+                if (reponseHttp.IsSuccessStatusCode)
+                {
+                    foreach (var doc in documents)
+                    {
+                        doc.EstIndexe = true;
+                    }
+                    await _context.SaveChangesAsync();
+                    TempData["Succes"] = $"{documents.Count} document(s) ré-indexé(s) avec succès.";
+                }
+                else
+                {
+                    TempData["Erreur"] = "Le service Python a renvoyé une erreur lors de la ré-indexation.";
+                }
+            }
+            catch (HttpRequestException)
+            {
+                TempData["Erreur"] = "Impossible de contacter le service Python. Vérifie qu'il tourne sur le port 8001.";
+            }
+            catch (TaskCanceledException)
+            {
+                TempData["Erreur"] = "La ré-indexation prend trop de temps (timeout de 5 minutes dépassé).";
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

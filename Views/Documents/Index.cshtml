@@ -15,6 +15,17 @@
 <h1 class="page-title">Assistant Documentaire Intelligent</h1>
 <p class="page-subtitle">Ajouter vos documents PDF</p>
 
+<h1 class="page-title">Assistant Documentaire Intelligent</h1>
+<p class="page-subtitle">Ajouter vos documents PDF</p>
+
+@if (TempData["Succes"] != null)
+{
+    <div class="alert-banner success">@TempData["Succes"]</div>
+}
+@if (TempData["Erreur"] != null)
+{
+    <div class="alert-banner error">@TempData["Erreur"]</div>
+}
 <form asp-action="Upload" method="post" enctype="multipart/form-data" id="uploadForm">
     <label for="fileInput" class="dropzone" id="dropzone">
         <div class="dropzone-text">
@@ -30,7 +41,12 @@
 </form>
 
 <div class="documents-card">
-    <h2>Liste des Documents Uploadés</h2>
+    <div class="documents-card-header">
+        <h2>Liste des Documents Uploadés</h2>
+        <form asp-action="ReindexerTout" method="post" onsubmit="return confirm('Ré-indexer tous les documents ? Cela peut prendre du temps.');">
+            <button type="submit" class="btn-reindex">Ré-indexer tout</button>
+        </form>
+    </div>
     <table class="documents-table">
         <thead>
             <tr>

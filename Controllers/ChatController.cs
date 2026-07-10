@@ -41,6 +41,8 @@ namespace AssistantDocumentaire1.Controllers
             }
 
             var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromMinutes(3); // Mistral en local peut être lent sur CPU
+
             var contenu = new StringContent(
                 JsonSerializer.Serialize(new { question = req.Question }),
                 Encoding.UTF8,
@@ -49,14 +51,21 @@ namespace AssistantDocumentaire1.Controllers
             try
             {
                 var reponseHttp = await client.PostAsync($"{RagServiceUrl}/ask", contenu);
+
                 if (!reponseHttp.IsSuccessStatusCode)
                 {
-                    return Json(new { reponse = "Le service d'IA local ne répond pas. Vérifie qu'Uvicorn est bien lancé (port 8001)." });
+                    return Json(new { reponse = "Le service d'IA local a répondu avec une erreur. Vérifie les logs du terminal Python." });
                 }
+
                 var json = await reponseHttp.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(json);
                 var reponseTexte = doc.RootElement.GetProperty("reponse").GetString();
+
                 return Json(new { reponse = reponseTexte });
+            }
+            catch (TaskCanceledException)
+            {
+                return Json(new { reponse = "Le modèle met trop de temps à répondre (timeout). Réessaie, ou pose une question plus courte." });
             }
             catch (HttpRequestException)
             {
