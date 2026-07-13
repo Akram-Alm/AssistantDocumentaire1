@@ -101,7 +101,7 @@ namespace AssistantDocumentaire1.Controllers
                     Encoding.UTF8,
                     "application/json");
 
-                var reponse = await client.PostAsync($"{RagServiceUrl}/index", contenu);
+                var reponse = await client.PostAsync($"{_ragServiceUrl}/index", contenu);
                 return reponse.IsSuccessStatusCode;
             }
             catch (HttpRequestException)
@@ -125,7 +125,7 @@ namespace AssistantDocumentaire1.Controllers
                         JsonSerializer.Serialize(new { document_id = document.Id }),
                         Encoding.UTF8,
                         "application/json");
-                    await client.PostAsync($"{RagServiceUrl}/supprimer", contenu);
+                    await client.PostAsync($"{_ragServiceUrl}/supprimer", contenu);
                 }
                 catch (HttpRequestException)
                 {
@@ -162,7 +162,7 @@ namespace AssistantDocumentaire1.Controllers
             try
             {
                 var contenu = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                var reponseHttp = await client.PostAsync($"{RagServiceUrl}/reindexer_tout", contenu);
+                var reponseHttp = await client.PostAsync($"{_ragServiceUrl}/reindexer_tout", contenu);
 
                 if (reponseHttp.IsSuccessStatusCode)
                 {

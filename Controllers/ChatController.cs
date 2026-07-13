@@ -51,7 +51,7 @@ namespace AssistantDocumentaire1.Controllers
 
             try
             {
-                var reponseHttp = await client.PostAsync($"{RagServiceUrl}/ask", contenu);
+                var reponseHttp = await client.PostAsync($"{_ragServiceUrl}/ask", contenu);
 
                 if (!reponseHttp.IsSuccessStatusCode)
                 {
