@@ -10,12 +10,13 @@ namespace AssistantDocumentaire1.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
-        private const string RagServiceUrl = "http://127.0.0.1:8001";
+        private readonly string _ragServiceUrl;
 
-        public ChatController(ApplicationDbContext context, IHttpClientFactory httpClientFactory)
+        public ChatController(ApplicationDbContext context, IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _context = context;
             _httpClientFactory = httpClientFactory;
+            _ragServiceUrl = configuration["RagServiceUrl"] ?? "http://127.0.0.1:8001";
         }
 
         public async Task<IActionResult> Index()

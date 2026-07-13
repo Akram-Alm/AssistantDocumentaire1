@@ -12,13 +12,16 @@ namespace AssistantDocumentaire1.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly IHttpClientFactory _httpClientFactory;
-        private const string RagServiceUrl = "http://127.0.0.1:8001";
+        private readonly string _ragServiceUrl;
+        private readonly IConfiguration _configuration;
 
-        public DocumentsController(ApplicationDbContext context, IWebHostEnvironment environment, IHttpClientFactory httpClientFactory)
+        public DocumentsController(ApplicationDbContext context, IWebHostEnvironment environment, IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _context = context;
             _environment = environment;
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
+            _ragServiceUrl = configuration["RagServiceUrl"] ?? "http://127.0.0.1:8001";
         }
 
         public async Task<IActionResult> Index()
@@ -38,7 +41,7 @@ namespace AssistantDocumentaire1.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            string dossierStockage = Path.Combine(_environment.ContentRootPath, "UploadedFiles");
+            string dossierStockage = _configuration["StoragePath"] ?? Path.Combine(_environment.ContentRootPath, "UploadedFiles");
             if (!Directory.Exists(dossierStockage))
             {
                 Directory.CreateDirectory(dossierStockage);
